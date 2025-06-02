@@ -11,6 +11,7 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [form, setForm] = useState({ date: "", timeIn: "", timeOut: "" });
+  const [editIndex, setEditIndex] = useState(null);
 
   const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
 
@@ -21,14 +22,32 @@ export default function App() {
   const calculateHours = (inTime, outTime) => {
     const start = new Date(`1970-01-01T${inTime}`);
     const end = new Date(`1970-01-01T${outTime}`);
-    return Math.abs((end - start) / (1000 * 60 * 60)); // hours
+    return Math.abs((end - start) / (1000 * 60 * 60));
   };
 
-  const handleAdd = () => {
+  const handleSave = () => {
     const hours = calculateHours(form.timeIn, form.timeOut);
-    setLogs([...logs, { ...form, hours }]);
+    const newEntry = { ...form, hours };
+
+    if (editIndex !== null) {
+      const updatedLogs = logs.map((log, idx) =>
+        idx === editIndex ? newEntry : log
+      );
+      setLogs(updatedLogs);
+    } else {
+      setLogs([...logs, newEntry]);
+    }
+
     setForm({ date: "", timeIn: "", timeOut: "" });
     setModalOpen(false);
+    setEditIndex(null);
+  };
+
+  const handleEdit = (index) => {
+    const entry = logs[index];
+    setForm({ date: entry.date, timeIn: entry.timeIn, timeOut: entry.timeOut });
+    setEditIndex(index);
+    setModalOpen(true);
   };
 
   const handleDelete = (index) => {
@@ -69,64 +88,80 @@ export default function App() {
         <div className="flex justify-end mb-4">
           <button
             className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              setForm({ date: "", timeIn: "", timeOut: "" });
+              setEditIndex(null);
+              setModalOpen(true);
+            }}
           >
             Time In
           </button>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left text-white rounded overflow-hidden">
-            <thead className="bg-slate-800 text-white">
-              <tr>
-                <th className="p-2">Date</th>
-                <th className="p-2">Time In</th>
-                <th className="p-2">Time Out</th>
-                <th className="p-2">Hours</th>
-                <th className="p-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, index) => (
-                <tr
-                  key={index}
-                  className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700"
-                >
-                  <td className="p-2">{log.date}</td>
-                  <td className="p-2">{log.timeIn}</td>
-                  <td className="p-2">{log.timeOut}</td>
-                  <td className="p-2">{log.hours.toFixed(2)}</td>
-                  <td className="p-2">
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-400 hover:text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {logs.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="text-center py-4 text-slate-400">
-                    No entries yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+  <div className="max-h-96 overflow-y-auto"> {/* Added this container */}
+    <table className="min-w-full text-sm text-left text-white rounded">
+      <thead className="bg-slate-800 text-white sticky top-0"> {/* Added sticky header */}
+        <tr>
+          <th className="p-2">Date</th>
+          <th className="p-2">Time In</th>
+          <th className="p-2">Time Out</th>
+          <th className="p-2">Hours</th>
+          <th className="p-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {logs.map((log, index) => (
+          <tr
+            key={index}
+            className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700"
+          >
+            <td className="p-2">{log.date}</td>
+            <td className="p-2">{log.timeIn}</td>
+            <td className="p-2">{log.timeOut}</td>
+            <td className="p-2">{log.hours.toFixed(2)}</td>
+            <td className="p-2 space-x-2">
+              <button
+                onClick={() => handleEdit(index)}
+                className="text-yellow-400 hover:text-yellow-600"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(index)}
+                className="text-red-400 hover:text-red-600"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+        {logs.length === 0 && (
+          <tr>
+            <td colSpan="5" className="text-center py-4 text-slate-400">
+              No entries yet.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
         <div className="text-right mt-4 font-bold text-white">
           Total Rendered Hours: {totalHours}
         </div>
       </div>
 
-      {/* Add Time Modal */}
+      {/* Add/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-80">
-            <h2 className="text-xl mb-4">Add Time Entry</h2>
+            <h2 className="text-xl mb-4">
+              {editIndex !== null ? "Edit Entry" : "Add Time Entry"}
+            </h2>
             <label className="block mb-2">
               Date:
               <input
@@ -157,13 +192,16 @@ export default function App() {
             <div className="flex justify-between">
               <button
                 className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
-                onClick={handleAdd}
+                onClick={handleSave}
               >
                 Save
               </button>
               <button
                 className="text-slate-400 hover:text-white"
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalOpen(false);
+                  setEditIndex(null);
+                }}
               >
                 Cancel
               </button>
