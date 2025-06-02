@@ -284,7 +284,7 @@ export default function App() {
       )}
 
       <footer className="bg-slate-800 text-center text-sm py-4 mt-6 text-slate-400">
-        Developed by <a className="underline text-blue-400" href="https://ronald-portfolio-lumnaire.vercel.app/"
+        Developed by <a className="text-blue-400" href="https://ronald-portfolio-lumnaire.vercel.app/"
           target="_blank">Ronald Castromero</a> 💻
       </footer>
     </div>
