@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+
 const getLocalData = () => {
   const data = localStorage.getItem("ojt-logs");
   return data ? JSON.parse(data) : [];
@@ -8,6 +9,7 @@ const getLocalData = () => {
 export default function App() {
   const [logs, setLogs] = useState(getLocalData());
   const [modalOpen, setModalOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [form, setForm] = useState({ date: "", timeIn: "", timeOut: "" });
 
   const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
@@ -35,15 +37,28 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
       {/* Navbar */}
-      <div className="bg-slate-800 shadow-md shadow-slate-900 px-6 py-4 flex items-center">
-       <img className="w-10 rounded-full mr-3" src="/Lumnaire.jpg" alt="" />
-        <h1 className="text-xl font-semibold text-white">Lumnaire</h1>
+      <div className="bg-slate-800 shadow-md shadow-slate-900 px-6 py-4 flex items-center justify-between">
+        <a
+          href="https://ronald-portfolio-lumnaire.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          <img className="w-10 rounded-full mr-3" src="/Lumnaire.jpg" alt="logo" />
+          <h1 className="text-xl font-semibold text-white">Lumnaire</h1>
+        </a>
+        <button
+          className="text-sm text-white hover:text-blue-400"
+          onClick={() => setSupportOpen(true)}
+        >
+          Support Developer ❤️
+        </button>
       </div>
 
       {/* Main Content */}
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-4xl mx-auto w-full flex-grow">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold">🕒 OJT HOUR TRACKER</h1>
           <p className="text-slate-300 mt-2">
@@ -60,54 +75,56 @@ export default function App() {
           </button>
         </div>
 
-        <table className="w-full text-sm text-left text-white rounded overflow-hidden">
-          <thead className="bg-slate-800 text-white">
-            <tr>
-              <th className="p-2">Date</th>
-              <th className="p-2">Time In</th>
-              <th className="p-2">Time Out</th>
-              <th className="p-2">Hours</th>
-              <th className="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log, index) => (
-              <tr
-                key={index}
-                className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700"
-              >
-                <td className="p-2">{log.date}</td>
-                <td className="p-2">{log.timeIn}</td>
-                <td className="p-2">{log.timeOut}</td>
-                <td className="p-2">{log.hours.toFixed(2)}</td>
-                <td className="p-2">
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {logs.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm text-left text-white rounded overflow-hidden">
+            <thead className="bg-slate-800 text-white">
               <tr>
-                <td colSpan="5" className="text-center py-4 text-slate-400">
-                  No entries yet.
-                </td>
+                <th className="p-2">Date</th>
+                <th className="p-2">Time In</th>
+                <th className="p-2">Time Out</th>
+                <th className="p-2">Hours</th>
+                <th className="p-2">Action</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {logs.map((log, index) => (
+                <tr
+                  key={index}
+                  className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700"
+                >
+                  <td className="p-2">{log.date}</td>
+                  <td className="p-2">{log.timeIn}</td>
+                  <td className="p-2">{log.timeOut}</td>
+                  <td className="p-2">{log.hours.toFixed(2)}</td>
+                  <td className="p-2">
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {logs.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-slate-400">
+                    No entries yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         <div className="text-right mt-4 font-bold text-white">
           Total Rendered Hours: {totalHours}
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Add Time Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-xl mb-4">Add Time Entry</h2>
             <label className="block mb-2">
@@ -154,6 +171,36 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Support Modal */}
+      {supportOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-slate-800 p-4 rounded-lg w-[90%] max-w-sm shadow-xl relative">
+            <button
+              onClick={() => setSupportOpen(false)}
+              className="absolute top-2 right-3 text-white text-lg hover:text-red-400"
+            >
+              ✖
+            </button>
+            <h2 className="text-center text-lg mb-3 font-semibold">Support Developer</h2>
+            <div className="bg-slate-900 p-2 rounded">
+              <img
+                src="/gcash-qr-code.jpeg"
+                alt="GCash QR Code"
+                className="w-full rounded"
+              />
+            </div>
+            <p className="text-center mt-3 text-sm text-slate-400">
+              Thank you for your support! 💙
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-slate-800 text-center text-sm py-4 mt-6 text-slate-400">
+        Developed by Ronald Castromero
+      </footer>
     </div>
   );
 }
