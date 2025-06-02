@@ -220,7 +220,7 @@ export default function App() {
           <div>Total Hours Needed: {totalHoursNeeded}</div>
           <div>Remaining Hours: {(totalHoursNeeded - totalHours).toFixed(2)}</div>
 
-          <button onClick={() => { setNeededInput(totalHoursNeeded); setShowNeededModal(true); }} className="mt-2 bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm cursor-pointer">
+          <button onClick={() => { setNeededInput(totalHoursNeeded); setShowNeededModal(true); }} className="mt-2 bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 text-sm cursor-pointer">
             + Set Total Hours Needed
           </button>
 
