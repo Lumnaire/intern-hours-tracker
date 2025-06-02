@@ -6,6 +6,27 @@ const getLocalData = () => {
   return data ? JSON.parse(data) : [];
 };
 
+const spriteList = [
+  "abra.gif",
+  "bellsprout.gif",
+  "blastoise.gif",
+  "bulbasaur.gif",
+  "butterfree.gif",
+  "charizard.gif",
+  "paras.gif",
+  "horsea.gif",
+  "eevee.gif",
+  "dratini.gif",
+  "cubone.gif",
+  "charmander.gif",
+  "pidgeotto.gif",
+  "pikachu.gif",
+  "sandshrew.gif",
+  "sandslash.gif",
+  "squirtle.gif",
+  "vulpix.gif",
+];
+
 export default function App() {
   const [logs, setLogs] = useState(getLocalData());
   const [modalOpen, setModalOpen] = useState(false);
@@ -18,6 +39,7 @@ export default function App() {
   });
   const [showNeededModal, setShowNeededModal] = useState(false);
   const [neededInput, setNeededInput] = useState(totalHoursNeeded);
+  const [randomSprite, setRandomSprite] = useState("");
 
   const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
 
@@ -65,6 +87,11 @@ export default function App() {
     setLogs(updated);
   };
 
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * spriteList.length);
+    setRandomSprite(spriteList[randomIndex]);
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
       <div className="bg-slate-800 shadow-md shadow-slate-900 px-6 py-4 flex items-center justify-between">
@@ -74,7 +101,11 @@ export default function App() {
           rel="noopener noreferrer"
           className="flex items-center"
         >
-          <img className="w-10 rounded-full mr-3" src="/Lumnaire.jpg" alt="logo" />
+          <img
+            className="w-10 rounded-full mr-3"
+            src="/Lumnaire.jpg"
+            alt="logo"
+          />
           <h1 className="text-xl font-semibold text-white">Lumnaire</h1>
         </a>
         <button
@@ -159,7 +190,9 @@ export default function App() {
         <div className="text-right mt-4 font-bold text-white space-y-2">
           <div>Total Rendered Hours: {totalHours}</div>
           <div>Total Hours Needed: {totalHoursNeeded}</div>
-          <div>Remaining Hours: {(totalHoursNeeded - totalHours).toFixed(2)}</div>
+          <div>
+            Remaining Hours: {(totalHoursNeeded - totalHours).toFixed(2)}
+          </div>
           <button
             onClick={() => {
               setNeededInput(totalHoursNeeded);
@@ -169,6 +202,14 @@ export default function App() {
           >
             Set Total Hours Needed
           </button>
+
+          <div className="mt-4 flex justify-end">
+            <img
+              src={`/sprites/${randomSprite}`}
+              alt="Random Sprite"
+              className="w-20 h-20"
+            />
+          </div>
         </div>
       </div>
 
@@ -268,7 +309,9 @@ export default function App() {
             >
               ✖
             </button>
-            <h2 className="text-center text-lg mb-3 font-semibold">Support Developer</h2>
+            <h2 className="text-center text-lg mb-3 font-semibold">
+              Support Developer
+            </h2>
             <div className="bg-slate-900 p-2 rounded">
               <img
                 src="/gcash-qr-code.jpeg"
@@ -284,8 +327,15 @@ export default function App() {
       )}
 
       <footer className="bg-slate-800 text-center text-sm py-4 mt-6 text-slate-400">
-        Developed by <a className="text-blue-400" href="https://ronald-portfolio-lumnaire.vercel.app/"
-          target="_blank">Ronald Castromero</a> 💻
+        Developed by{" "}
+        <a
+          className="text-blue-400"
+          href="https://ronald-portfolio-lumnaire.vercel.app/"
+          target="_blank"
+        >
+          Ronald Castromero
+        </a>{" "}
+        💻
       </footer>
     </div>
   );
