@@ -7,24 +7,10 @@ const getLocalData = () => {
 };
 
 const spriteList = [
-  "abra.gif",
-  "bellsprout.gif",
-  "blastoise.gif",
-  "bulbasaur.gif",
-  "butterfree.gif",
-  "charizard.gif",
-  "paras.gif",
-  "horsea.gif",
-  "eevee.gif",
-  "dratini.gif",
-  "cubone.gif",
-  "charmander.gif",
-  "pidgeotto.gif",
-  "pikachu.gif",
-  "sandshrew.gif",
-  "sandslash.gif",
-  "squirtle.gif",
-  "vulpix.gif",
+  "abra.gif", "bellsprout.gif", "blastoise.gif", "bulbasaur.gif", "butterfree.gif",
+  "charizard.gif", "paras.gif", "horsea.gif", "eevee.gif", "dratini.gif",
+  "cubone.gif", "charmander.gif", "pidgeotto.gif", "pikachu.gif", "sandshrew.gif",
+  "sandslash.gif", "squirtle.gif", "vulpix.gif",
 ];
 
 export default function App() {
@@ -41,10 +27,11 @@ export default function App() {
   const [neededInput, setNeededInput] = useState(totalHoursNeeded);
   const [randomSprite, setRandomSprite] = useState("");
   const [breakModalOpen, setBreakModalOpen] = useState(false);
-  const [breaks, setBreaks] = useState([]);
+  const [breaks, setBreaks] = useState(() => {
+    const data = localStorage.getItem("ojt-breaks");
+    return data ? JSON.parse(data) : [];
+  });
   const [breakInput, setBreakInput] = useState({ start: "", end: "" });
-
-  const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
 
   useEffect(() => {
     localStorage.setItem("ojt-logs", JSON.stringify(logs));
@@ -54,16 +41,31 @@ export default function App() {
     localStorage.setItem("ojt-total-hours-needed", totalHoursNeeded);
   }, [totalHoursNeeded]);
 
+  useEffect(() => {
+    localStorage.setItem("ojt-breaks", JSON.stringify(breaks));
+  }, [breaks]);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * spriteList.length);
+    setRandomSprite(spriteList[randomIndex]);
+  }, []);
+
   const calculateHours = (inTime, outTime) => {
     const start = new Date(`1970-01-01T${inTime}`);
     const end = new Date(`1970-01-01T${outTime}`);
     let total = Math.abs((end - start) / (1000 * 60 * 60));
 
+    // Subtract overlapping breaks only
     breaks.forEach((br) => {
       const bStart = new Date(`1970-01-01T${br.start}`);
       const bEnd = new Date(`1970-01-01T${br.end}`);
-      const bHours = Math.abs((bEnd - bStart) / (1000 * 60 * 60));
-      total -= bHours;
+      const overlapStart = new Date(Math.max(start, bStart));
+      const overlapEnd = new Date(Math.min(end, bEnd));
+
+      if (overlapEnd > overlapStart) {
+        const overlap = (overlapEnd - overlapStart) / (1000 * 60 * 60);
+        total -= overlap;
+      }
     });
 
     return Math.max(0, total);
@@ -99,13 +101,11 @@ export default function App() {
     setLogs(updated);
   };
 
-  useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * spriteList.length);
-    setRandomSprite(spriteList[randomIndex]);
-  }, []);
+  const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+      {/* HEADER */}
       <div className="bg-slate-800 shadow-md shadow-slate-900 px-6 py-4 flex items-center justify-between">
         <a href="https://ronald-portfolio-lumnaire.vercel.app/" target="_blank" rel="noopener noreferrer" className="flex items-center">
           <img className="w-10 rounded-full mr-3" src="/Lumnaire.jpg" alt="logo" />
@@ -116,76 +116,76 @@ export default function App() {
         </button>
       </div>
 
+      {/* MAIN CONTENT */}
       <div className="p-6 max-w-4xl mx-auto w-full flex-grow">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold">🕒 OJT HOUR TRACKER</h1>
           <p className="text-slate-300 mt-2">Track your attendance and rendered hours with ease.</p>
+           <small className="text-red-400">[NOTE: Add your regular break time first to deduct it from your hours.]</small>
         </div>
 
-        <div className="flex justify-end mb-4">
-          <button
-            className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
-            onClick={() => {
-              setForm({ date: "", timeIn: "", timeOut: "" });
-              setEditIndex(null);
-              setModalOpen(true);
-            }}
-          >
-            Add Time In
+        {/* ADD BUTTON */}
+        <div className="flex justify-end mb-4 items-center">
+      
+          <button className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 flex" onClick={() => {
+            setForm({ date: "", timeIn: "", timeOut: "" });
+            setEditIndex(null);
+            setModalOpen(true);
+          }}>
+           + Add time entry
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="max-h-96 overflow-y-auto">
-            <table className="min-w-full text-sm text-left text-white rounded">
-              <thead className="bg-slate-800 text-white sticky top-0">
-                <tr>
-                  <th className="p-2">Date</th>
-                  <th className="p-2">Time In</th>
-                  <th className="p-2">Time Out</th>
-                  <th className="p-2">Hours</th>
-                  <th className="p-2">Action</th>
+        {/* TABLE */}
+        <div className="overflow-x-auto max-h-96">
+          <table className="min-w-full text-sm text-left text-white rounded">
+            <thead className="bg-slate-800 text-white sticky top-0">
+              <tr>
+                <th className="p-2">Date</th>
+                <th className="p-2">Time In</th>
+                <th className="p-2">Time Out</th>
+                <th className="p-2">Hours</th>
+                <th className="p-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, index) => (
+                <tr key={index} className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700">
+                  <td className="p-2">{log.date}</td>
+                  <td className="p-2">{log.timeIn}</td>
+                  <td className="p-2">{log.timeOut}</td>
+                  <td className="p-2">{log.hours.toFixed(2)}</td>
+                  <td className="p-2 space-x-2">
+                    <button onClick={() => handleEdit(index)} className="text-yellow-400 hover:text-yellow-600">Edit</button>
+                    <button onClick={() => handleDelete(index)} className="text-red-400 hover:text-red-600">Delete</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {logs.map((log, index) => (
-                  <tr key={index} className="odd:bg-slate-900 even:bg-slate-800 border-b border-slate-700">
-                    <td className="p-2">{log.date}</td>
-                    <td className="p-2">{log.timeIn}</td>
-                    <td className="p-2">{log.timeOut}</td>
-                    <td className="p-2">{log.hours.toFixed(2)}</td>
-                    <td className="p-2 space-x-2">
-                      <button onClick={() => handleEdit(index)} className="text-yellow-400 hover:text-yellow-600">Edit</button>
-                      <button onClick={() => handleDelete(index)} className="text-red-400 hover:text-red-600">Delete</button>
-                    </td>
-                  </tr>
-                ))}
-                {logs.length === 0 && (
-                  <tr>
-                    <td colSpan="5" className="text-center py-4 text-slate-400">No entries yet.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {logs.length === 0 && (
+                <tr><td colSpan="5" className="text-center py-4 text-slate-400">No entries yet.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
+        {/* TOTALS */}
         <div className="text-right mt-4 font-bold text-white space-y-2">
           <div>Total Rendered Hours: {totalHours}</div>
           <div>Total Hours Needed: {totalHoursNeeded}</div>
           <div>Remaining Hours: {(totalHoursNeeded - totalHours).toFixed(2)}</div>
 
           <button onClick={() => { setNeededInput(totalHoursNeeded); setShowNeededModal(true); }} className="mt-2 bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm">
-            Set Total Hours Needed
+           + Set Total Hours Needed
           </button>
-
           <button onClick={() => setBreakModalOpen(true)} className="ml-2 mt-2 bg-purple-500 px-4 py-1 rounded hover:bg-purple-600 text-sm">
-            Add Break Time
+           + Add Break Time
           </button>
+           
 
           <div className="mt-4 flex justify-end">
             <img src={`/sprites/${randomSprite}`} alt="Random Sprite" className="w-20 h-20" />
           </div>
+         
         </div>
       </div>
 
