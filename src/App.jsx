@@ -13,6 +13,14 @@ const spriteList = [
   "sandslash.gif", "squirtle.gif", "vulpix.gif",
 ];
 
+// Helper function to format break duration
+const formatBreakDuration = (minutes) => {
+  if (!minutes) return "None";
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return `${hours > 0 ? `${hours}hr ` : ""}${mins > 0 ? `${mins}mins` : ""}`.trim();
+};
+
 export default function App() {
   const [logs, setLogs] = useState(getLocalData());
   const [modalOpen, setModalOpen] = useState(false);
@@ -21,9 +29,9 @@ export default function App() {
     date: "", 
     timeIn: "", 
     timeOut: "",
-    breakStart: "",
-    breakEnd: ""
+    breaks: [] // Now storing multiple breaks
   });
+  const [currentBreak, setCurrentBreak] = useState({ start: "", end: "" });
   const [editIndex, setEditIndex] = useState(null);
   const [totalHoursNeeded, setTotalHoursNeeded] = useState(() => {
     const data = localStorage.getItem("ojt-total-hours-needed");
@@ -46,35 +54,51 @@ export default function App() {
     setRandomSprite(spriteList[randomIndex]);
   }, []);
 
-  const calculateHours = (inTime, outTime, breakStart, breakEnd) => {
+  const calculateHours = (inTime, outTime, breaks) => {
     const start = new Date(`1970-01-01T${inTime}`);
     const end = new Date(`1970-01-01T${outTime}`);
     let total = Math.abs((end - start) / (1000 * 60 * 60));
 
-    // Subtract break time if provided
-    if (breakStart && breakEnd) {
-      const bStart = new Date(`1970-01-01T${breakStart}`);
-      const bEnd = new Date(`1970-01-01T${breakEnd}`);
-      
-      // Only subtract if break is within work hours
-      if (bStart >= start && bEnd <= end) {
-        const breakHours = (bEnd - bStart) / (1000 * 60 * 60);
-        total -= breakHours;
+    // Calculate total break time in hours
+    const totalBreakHours = breaks.reduce((sum, br) => {
+      if (br.start && br.end) {
+        const bStart = new Date(`1970-01-01T${br.start}`);
+        const bEnd = new Date(`1970-01-01T${br.end}`);
+        
+        // Only count if break is within work hours
+        if (bStart >= start && bEnd <= end) {
+          return sum + (bEnd - bStart) / (1000 * 60 * 60);
+        }
       }
-    }
+      return sum;
+    }, 0);
 
+    total -= totalBreakHours;
     return Math.max(0, total);
   };
 
+  const calculateTotalBreakMinutes = (breaks) => {
+    return breaks.reduce((sum, br) => {
+      if (br.start && br.end) {
+        const bStart = new Date(`1970-01-01T${br.start}`);
+        const bEnd = new Date(`1970-01-01T${br.end}`);
+        return sum + (bEnd - bStart) / (1000 * 60);
+      }
+      return sum;
+    }, 0);
+  };
+
   const handleSave = () => {
-    const hours = calculateHours(form.timeIn, form.timeOut, form.breakStart, form.breakEnd);
+    const hours = calculateHours(form.timeIn, form.timeOut, form.breaks);
+    const totalBreakMinutes = calculateTotalBreakMinutes(form.breaks);
+    
     const newEntry = { 
       date: form.date, 
       timeIn: form.timeIn, 
       timeOut: form.timeOut,
-      breakStart: form.breakStart,
-      breakEnd: form.breakEnd,
-      hours 
+      breaks: form.breaks,
+      hours,
+      totalBreakMinutes // Store total break minutes for display
     };
 
     if (editIndex !== null) {
@@ -86,7 +110,7 @@ export default function App() {
       setLogs([...logs, newEntry]);
     }
 
-    setForm({ date: "", timeIn: "", timeOut: "", breakStart: "", breakEnd: "" });
+    setForm({ date: "", timeIn: "", timeOut: "", breaks: [] });
     setModalOpen(false);
     setEditIndex(null);
   };
@@ -97,8 +121,7 @@ export default function App() {
       date: entry.date, 
       timeIn: entry.timeIn, 
       timeOut: entry.timeOut,
-      breakStart: entry.breakStart || "",
-      breakEnd: entry.breakEnd || ""
+      breaks: entry.breaks || []
     });
     setEditIndex(index);
     setModalOpen(true);
@@ -107,6 +130,21 @@ export default function App() {
   const handleDelete = (index) => {
     const updated = logs.filter((_, i) => i !== index);
     setLogs(updated);
+  };
+
+  const addBreak = () => {
+    if (currentBreak.start && currentBreak.end) {
+      setForm({
+        ...form,
+        breaks: [...form.breaks, { ...currentBreak }]
+      });
+      setCurrentBreak({ start: "", end: "" });
+    }
+  };
+
+  const removeBreak = (index) => {
+    const updatedBreaks = form.breaks.filter((_, i) => i !== index);
+    setForm({ ...form, breaks: updatedBreaks });
   };
 
   const totalHours = logs.reduce((sum, log) => sum + log.hours, 0).toFixed(2);
@@ -134,7 +172,7 @@ export default function App() {
         {/* ADD BUTTON */}
         <div className="flex justify-end mb-4 items-center">
           <button className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 flex" onClick={() => {
-            setForm({ date: "", timeIn: "", timeOut: "", breakStart: "", breakEnd: "" });
+            setForm({ date: "", timeIn: "", timeOut: "", breaks: [] });
             setEditIndex(null);
             setModalOpen(true);
           }}>
@@ -150,7 +188,7 @@ export default function App() {
                 <th className="p-2">Date</th>
                 <th className="p-2">Time In</th>
                 <th className="p-2">Time Out</th>
-                <th className="p-2">Break</th>
+                <th className="p-2">Break Time</th>
                 <th className="p-2">Hours</th>
                 <th className="p-2">Action</th>
               </tr>
@@ -161,9 +199,7 @@ export default function App() {
                   <td className="p-2">{log.date}</td>
                   <td className="p-2">{log.timeIn}</td>
                   <td className="p-2">{log.timeOut}</td>
-                  <td className="p-2">
-                    {log.breakStart && log.breakEnd ? `${log.breakStart} - ${log.breakEnd}` : "None"}
-                  </td>
+                  <td className="p-2">{formatBreakDuration(log.totalBreakMinutes)}</td>
                   <td className="p-2">{log.hours.toFixed(2)}</td>
                   <td className="p-2 space-x-2">
                     <button onClick={() => handleEdit(index)} className="text-yellow-400 hover:text-yellow-600">Edit</button>
@@ -197,31 +233,83 @@ export default function App() {
       {/* TIME ENTRY MODAL */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-80">
+          <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-xl mb-4">{editIndex !== null ? "Edit Entry" : "Add Time Entry"}</h2>
             <label className="block mb-2">
               Date:
-              <input type="date" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              <input type="date" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" 
+                value={form.date} 
+                onChange={(e) => setForm({ ...form, date: e.target.value })} 
+              />
             </label>
             <label className="block mb-2">
               Time In:
-              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" value={form.timeIn} onChange={(e) => setForm({ ...form, timeIn: e.target.value })} />
+              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" 
+                value={form.timeIn} 
+                onChange={(e) => setForm({ ...form, timeIn: e.target.value })} 
+              />
             </label>
             <label className="block mb-2">
               Time Out:
-              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" value={form.timeOut} onChange={(e) => setForm({ ...form, timeOut: e.target.value })} />
+              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" 
+                value={form.timeOut} 
+                onChange={(e) => setForm({ ...form, timeOut: e.target.value })} 
+              />
             </label>
-            <div className="mb-2">
-              <label className="block text-sm">Break Start (optional):</label>
-              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" value={form.breakStart} onChange={(e) => setForm({ ...form, breakStart: e.target.value })} />
+
+            {/* BREAK TIME SECTION */}
+            <div className="mb-4 mt-6">
+              <h3 className="font-semibold mb-2">Break Times</h3>
+              
+              {/* Current break input */}
+              <div className="flex gap-2 mb-2">
+                <div className="flex-1">
+                  <label className="block text-xs">Start</label>
+                  <input type="time" className="w-full p-2 rounded bg-slate-900 text-white text-sm" 
+                    value={currentBreak.start} 
+                    onChange={(e) => setCurrentBreak({...currentBreak, start: e.target.value})} 
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs">End</label>
+                  <input type="time" className="w-full p-2 rounded bg-slate-900 text-white text-sm" 
+                    value={currentBreak.end} 
+                    onChange={(e) => setCurrentBreak({...currentBreak, end: e.target.value})} 
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button 
+                    onClick={addBreak}
+                    className="bg-blue-500 px-3 py-2 rounded hover:bg-blue-600 text-sm"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* List of added breaks */}
+              <div className="max-h-32 overflow-y-auto">
+                {form.breaks.map((br, index) => (
+                  <div key={index} className="flex justify-between items-center bg-slate-900 p-2 mb-2 rounded text-sm">
+                    <span>{br.start} - {br.end}</span>
+                    <button 
+                      onClick={() => removeBreak(index)}
+                      className="text-red-400 hover:text-red-600 text-xs"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm">Break End (optional):</label>
-              <input type="time" className="w-full mt-1 p-2 rounded bg-slate-900 text-white" value={form.breakEnd} onChange={(e) => setForm({ ...form, breakEnd: e.target.value })} />
-            </div>
-            <div className="flex justify-between">
-              <button className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600" onClick={handleSave}>Save</button>
-              <button className="text-slate-400 hover:text-white" onClick={() => { setModalOpen(false); setEditIndex(null); }}>Cancel</button>
+
+            <div className="flex justify-between mt-4">
+              <button className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600" onClick={handleSave}>
+                Save
+              </button>
+              <button className="text-slate-400 hover:text-white" onClick={() => { setModalOpen(false); setEditIndex(null); }}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -232,10 +320,22 @@ export default function App() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-xl mb-4">Set Total Hours Needed</h2>
-            <input type="number" className="w-full p-2 mb-4 rounded bg-slate-900 text-white" value={neededInput} onChange={(e) => setNeededInput(e.target.value)} />
+            <input type="number" className="w-full p-2 mb-4 rounded bg-slate-900 text-white" 
+              value={neededInput} 
+              onChange={(e) => setNeededInput(e.target.value)} 
+            />
             <div className="flex justify-between">
-              <button className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600" onClick={() => { setTotalHoursNeeded(parseFloat(neededInput) || 0); setShowNeededModal(false); }}>Save</button>
-              <button className="text-slate-400 hover:text-white" onClick={() => setShowNeededModal(false)}>Cancel</button>
+              <button className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600" 
+                onClick={() => { 
+                  setTotalHoursNeeded(parseFloat(neededInput) || 0); 
+                  setShowNeededModal(false); 
+                }}
+              >
+                Save
+              </button>
+              <button className="text-slate-400 hover:text-white" onClick={() => setShowNeededModal(false)}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -245,7 +345,9 @@ export default function App() {
       {supportOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-slate-800 p-4 rounded-lg w-[90%] max-w-sm shadow-xl relative">
-            <button onClick={() => setSupportOpen(false)} className="absolute top-2 right-3 text-white text-lg hover:text-red-400">✖</button>
+            <button onClick={() => setSupportOpen(false)} className="absolute top-2 right-3 text-white text-lg hover:text-red-400">
+              ✖
+            </button>
             <h2 className="text-center text-lg mb-3 font-semibold">Support Developer</h2>
             <div className="bg-slate-900 p-2 rounded">
               <img src="/gcash-qr-code.jpeg" alt="GCash QR Code" className="w-full rounded" />
