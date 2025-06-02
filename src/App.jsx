@@ -157,7 +157,7 @@ export default function App() {
           <img className="w-10 rounded-full mr-3" src="/Lumnaire.jpg" alt="logo" />
           <h1 className="text-xl font-semibold text-white">Lumnaire</h1>
         </a>
-        <button className="text-sm text-white hover:text-blue-400" onClick={() => setSupportOpen(true)}>
+        <button className="text-sm text-blue-400 hover:text-blue-400 cursor-pointer" onClick={() => setSupportOpen(true)}>
           Support Developer ❤️
         </button>
       </div>
@@ -171,7 +171,7 @@ export default function App() {
 
         {/* ADD BUTTON */}
         <div className="flex justify-end mb-4 items-center">
-          <button className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 flex" onClick={() => {
+          <button className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 flex cursor-pointer" onClick={() => {
             setForm({ date: "", timeIn: "", timeOut: "", breaks: [] });
             setEditIndex(null);
             setModalOpen(true);
@@ -202,8 +202,8 @@ export default function App() {
                   <td className="p-2">{formatBreakDuration(log.totalBreakMinutes)}</td>
                   <td className="p-2">{log.hours.toFixed(2)}</td>
                   <td className="p-2 space-x-2">
-                    <button onClick={() => handleEdit(index)} className="text-yellow-400 hover:text-yellow-600">Edit</button>
-                    <button onClick={() => handleDelete(index)} className="text-red-400 hover:text-red-600">Delete</button>
+                    <button onClick={() => handleEdit(index)} className="text-yellow-400 hover:text-yellow-600 cursor-pointer">Edit</button>
+                    <button onClick={() => handleDelete(index)} className="text-red-400 hover:text-red-600 cursor-pointer">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -220,7 +220,7 @@ export default function App() {
           <div>Total Hours Needed: {totalHoursNeeded}</div>
           <div>Remaining Hours: {(totalHoursNeeded - totalHours).toFixed(2)}</div>
 
-          <button onClick={() => { setNeededInput(totalHoursNeeded); setShowNeededModal(true); }} className="mt-2 bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm">
+          <button onClick={() => { setNeededInput(totalHoursNeeded); setShowNeededModal(true); }} className="mt-2 bg-blue-500 px-4 py-1 rounded hover:bg-blue-600 text-sm cursor-pointer">
             + Set Total Hours Needed
           </button>
 
